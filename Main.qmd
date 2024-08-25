@@ -1,0 +1,320 @@
+---
+title: "Teste monitor jd"
+format: html
+editor: visual
+---
+
+## Retirar % de graos do monitor campo john deere
+
+Nesse caso as imagens deverão estar na pasta img com o nome monitortrator, tentativa de separar Verde (3 tonalidades como podemos ver na foto) , Amarelo (somente 1 tonalidade), Laranja (2 tipos de tonalidade) e Vermelho (2 tipos de tonalidade)
+
+```{r}
+library(pliman)
+library(tidyverse)
+set_wd_here("arquivos/")
+monitor <- image_import("arquivos/img/monitortrator.jpeg", plot = TRUE)
+
+pegar_circulo <- image_dimension(monitor)
+
+monitor <- image_segment_mask(monitor, shape = "disc",size = pegar_circulo[[2]])
+
+set_pliman_viewer("mapview")
+plot(monitor)
+res <- analyze_objects(monitor,
+                       watershed = FALSE,
+                       object_index = "R",
+                       pixel_level_index = TRUE)
+
+monitor_tratamentos <- image_import(img = "arquivos/img/monitor_tratamentos.jpg")
+
+moni1 <- image_crop(img = monitor_tratamentos)
+
+moni2 <- image_crop(img = monitor_tratamentos)
+
+moni3 <- image_crop(img = monitor_tratamentos)
+
+moni4 <- image_crop(img = monitor_tratamentos)
+
+moni5 <- image_crop(img = monitor_tratamentos)
+
+moni6 <- image_crop(img = monitor_tratamentos)
+
+moni7 <- image_crop(img = monitor_tratamentos)
+
+moni8 <- image_crop(img = monitor_tratamentos)
+
+moni9 <- image_crop(img = monitor_tratamentos)
+
+moni10 <- image_crop(img = monitor_tratamentos)
+
+trata1 <- analyze_objects(moni1,
+                       watershed = FALSE,
+                       object_index = "R",
+                       pixel_level_index = TRUE)
+
+trata2 <- analyze_objects(moni2,
+                       watershed = FALSE,
+                       object_index = "R",
+                       pixel_level_index = TRUE)
+
+trata3 <- analyze_objects(moni3,
+                       watershed = FALSE,
+                       object_index = "R",
+                       pixel_level_index = TRUE)
+
+trata4 <- analyze_objects(moni4,
+                       watershed = FALSE,
+                       object_index = "R",
+                       pixel_level_index = TRUE)
+
+trata5 <- analyze_objects(moni5,
+                       watershed = FALSE,
+                       object_index = "R",
+                       pixel_level_index = TRUE)
+
+trata6 <- analyze_objects(moni6,
+                       watershed = FALSE,
+                       object_index = "R",
+                       pixel_level_index = TRUE)
+
+trata7 <- analyze_objects(moni7,
+                       watershed = FALSE,
+                       object_index = "R",
+                       pixel_level_index = TRUE)
+
+trata8 <- analyze_objects(moni8,
+                       watershed = FALSE,
+                       object_index = "R",
+                       pixel_level_index = TRUE)
+
+trata9 <- analyze_objects(moni9,
+                       watershed = FALSE,
+                       object_index = "R",
+                       pixel_level_index = TRUE)
+
+trata10 <- analyze_objects(moni10,
+                       watershed = FALSE,
+                       object_index = "R",
+                       pixel_level_index = TRUE)
+
+imagem_palheta <- image_import(img = "arquivos/img/palheta.jpeg", plot = TRUE)
+
+men70 <- image_crop(imagem_palheta) 
+entre7080 <- image_crop(imagem_palheta)
+entre8090 <- image_crop(imagem_palheta)
+entre90100 <- image_crop(imagem_palheta) 
+entre100110 <- image_crop(imagem_palheta)
+entre110120 <- image_crop(imagem_palheta)
+entre120130 <- image_crop(imagem_palheta)
+maior130 <- image_crop(imagem_palheta)
+
+men70 <- 
+  image_to_mat(men70) %>% 
+  mutate(classe = "70")
+entre7080 <- 
+  image_to_mat(entre7080) %>%
+  mutate(classe = "7080")
+entre8090 <- 
+  image_to_mat(entre8090) %>% 
+  mutate(classe = "8090")
+entre90100 <- 
+  image_to_mat(entre90100) %>% 
+  mutate(classe = "90100")
+entre100110 <- 
+  image_to_mat(entre100110) %>% 
+  mutate(classe = "100110")
+entre110120 <- 
+  image_to_mat(entre110120) %>% 
+  mutate(classe = "110120")
+entre120130 <- 
+  image_to_mat(entre120130) %>% 
+  mutate(classe = "120130")
+maior130 <- 
+  image_to_mat(maior130) %>%
+  mutate(classe = "130")
+
+dfbind <- 
+  bind_rows(men70, entre7080,entre8090,entre90100,entre100110,entre110120,entre120130,maior130) %>% 
+  rename(R = B1, G = B2, B = B3) %>% 
+  mutate(classe = as.factor(classe))
+
+library(caret)
+trcont <- trainControl(
+  method = "cv",
+  p = 0.7,
+  number = 10,
+  verboseIter = TRUE
+)
+mod <- train(
+  classe ~ R + G + B,
+  method = "rf",
+  ntree = 100,
+  tuneGrid = expand.grid(.mtry = 5),
+  data = dfbind,
+  trControl = trcont
+)
+
+
+# pixels do pivo
+pix <- 
+  res$object_rgb %>% 
+  select(2:4) %>% 
+  mutate(classe = predict(mod, newdata = .)) %>% 
+  group_by(classe) %>% 
+  summarise(n = n()) %>% 
+  ungroup() %>% 
+  mutate(prop = n / sum(n),
+         mediclasse = c(105, 115, 125, 130, 70, 75, 85, 95),
+         prodest = prop * mediclasse) 
+
+pix1 <- 
+  trata1$object_rgb %>% 
+  select(2:4) %>% 
+  mutate(classe = predict(mod, newdata = .)) %>% 
+  group_by(classe) %>% 
+  summarise(n = n()) %>% 
+  ungroup() %>% 
+  mutate(prop = n / sum(n)) 
+
+pix2 <- 
+  trata2$object_rgb %>% 
+  select(2:4) %>% 
+  mutate(classe = predict(mod, newdata = .)) %>% 
+  group_by(classe) %>% 
+  summarise(n = n()) %>% 
+  ungroup() %>% 
+  mutate(prop = n / sum(n)) 
+
+pix3 <- 
+  trata3$object_rgb %>% 
+  select(2:4) %>% 
+  mutate(classe = predict(mod, newdata = .)) %>% 
+  group_by(classe) %>% 
+  summarise(n = n()) %>% 
+  ungroup() %>% 
+  mutate(prop = n / sum(n)) 
+
+pix4 <- 
+  trata4$object_rgb %>% 
+  select(2:4) %>% 
+  mutate(classe = predict(mod, newdata = .)) %>% 
+  group_by(classe) %>% 
+  summarise(n = n()) %>% 
+  ungroup() %>% 
+  mutate(prop = n / sum(n)) 
+
+pix5 <- 
+  trata5$object_rgb %>% 
+  select(2:4) %>% 
+  mutate(classe = predict(mod, newdata = .)) %>% 
+  group_by(classe) %>% 
+  summarise(n = n()) %>% 
+  ungroup() %>% 
+  mutate(prop = n / sum(n)) 
+
+pix6 <- 
+  trata6$object_rgb %>% 
+  select(2:4) %>% 
+  mutate(classe = predict(mod, newdata = .)) %>% 
+  group_by(classe) %>% 
+  summarise(n = n()) %>% 
+  ungroup() %>% 
+  mutate(prop = n / sum(n)) 
+
+pix7 <- 
+  trata7$object_rgb %>% 
+  select(2:4) %>% 
+  mutate(classe = predict(mod, newdata = .)) %>% 
+  group_by(classe) %>% 
+  summarise(n = n()) %>% 
+  ungroup() %>% 
+  mutate(prop = n / sum(n)) 
+
+pix8 <- 
+  trata8$object_rgb %>% 
+  select(2:4) %>% 
+  mutate(classe = predict(mod, newdata = .)) %>% 
+  group_by(classe) %>% 
+  summarise(n = n()) %>% 
+  ungroup() %>% 
+  mutate(prop = n / sum(n)) 
+
+pix9 <- 
+  trata9$object_rgb %>% 
+  select(2:4) %>% 
+  mutate(classe = predict(mod, newdata = .)) %>% 
+  group_by(classe) %>% 
+  summarise(n = n()) %>% 
+  ungroup() %>% 
+  mutate(prop = n / sum(n)) 
+
+pix10 <- 
+  trata10$object_rgb %>% 
+  select(2:4) %>% 
+  mutate(classe = predict(mod, newdata = .)) %>% 
+  group_by(classe) %>% 
+  summarise(n = n()) %>% 
+  ungroup() %>% 
+  mutate(prop = n / sum(n)) 
+
+
+library(rio)
+export(pix, "arquivos/excel/resultado_pivo_2.xlsx")
+
+export(pix1, "arquivos/excel/resultado_tratamento_1.xlsx")
+export(pix2, "arquivos/excel/resultado_tratamento_2.xlsx")
+export(pix3, "arquivos/excel/resultado_tratamento_3.xlsx")
+export(pix4, "arquivos/excel/resultado_tratamento_4.xlsx")
+export(pix5, "arquivos/excel/resultado_tratamento_5.xlsx")
+export(pix6, "arquivos/excel/resultado_tratamento_6.xlsx")
+export(pix7, "arquivos/excel/resultado_tratamento_7.xlsx")
+export(pix8, "arquivos/excel/resultado_tratamento_8.xlsx")
+export(pix9, "arquivos/excel/resultado_tratamento_9.xlsx")
+export(pix10, "arquivos/excel/resultado_tratamento_10.xlsx")
+```
+
+## Media ponderada do pivo
+
+Habilitar as libs que usaremos e setar o Working diretory
+
+```{r}
+library(rio)  
+library(pliman)  
+set_wd_here()
+```
+
+Puxar todas os excels para o R
+
+```{r}
+trat1 <- import(file = "arquivos/excel/resultado_tratamento_1.xlsx")  
+trat2 <- import(file = "arquivos/excel/resultado_tratamento_2.xlsx")  
+trat3 <- import(file = "arquivos/excel/resultado_tratamento_3.xlsx")  
+trat4 <- import(file = "arquivos/excel/resultado_tratamento_4.xlsx")  
+trat5 <- import(file = "arquivos/excel/resultado_tratamento_5.xlsx")  
+trat6 <- import(file = "arquivos/excel/resultado_tratamento_6.xlsx")  
+trat7 <- import(file = "arquivos/excel/resultado_tratamento_7.xlsx")  
+trat8 <- import(file = "arquivos/excel/resultado_tratamento_8.xlsx")  
+trat9 <- import(file = "arquivos/excel/resultado_tratamento_9.xlsx")  
+trat10 <- import(file = "arquivos/excel/resultado_tratamento_10.xlsx")
+```
+
+Fazer a matematica doida que pediram
+
+```{r}
+soma_trat_1 <- sum(trat1$prodest)  
+soma_trat_2 <- sum(trat2$prodest)  
+soma_trat_3 <- sum(trat3$prodest)  
+soma_trat_4 <- sum(trat4$prodest)  
+soma_trat_5 <- sum(trat5$prodest)  
+soma_trat_6 <- sum(trat6$prodest)  
+soma_trat_7 <- sum(trat7$prodest)  
+soma_trat_8 <- sum(trat8$prodest)  
+soma_trat_9 <- sum(trat9$prodest)  
+soma_trat_10 <- sum(trat10$prodest)     
+df <- data.frame(   Ids = c(1,2,3,4,5,6,7,8,9,10),                        
+                    Medias_Ponderadas = c(soma_trat_1,soma_trat_2,soma_trat_3,soma_trat_4,soma_trat_5,soma_trat_6,soma_trat_7,soma_trat_8,soma_trat_9,soma_trat_10) )   
+
+export(df, "arquivos/excel/Medias_Ponderadas_Tratamentos.xlsx")
+```
+
+## 
